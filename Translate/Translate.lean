@@ -4,7 +4,7 @@ import Std.Data.Array.Lemmas
 import Mathlib.Tactic.Find
 import Mathlib.Tactic.Simps.Basic
 import Lean.Elab.Term
-import Arraycast.SimpAttrs
+import Translate.SimpAttrs
 
 open Lean Meta Elab Term Lean.Meta Tactic
 
