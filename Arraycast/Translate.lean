@@ -15,45 +15,6 @@ def transformEtaReduce (e : Expr) : MetaM Expr := do
 def betaReduceHead (e:Expr): Expr :=
   if e.isHeadBetaTarget then e.headBeta else e
 
-def transformEtaExpand (e : Expr) : MetaM Expr := do
-  let e' ← transform e (post := fun node => TransformStep.done <$> betaReduceHead <$> Meta.etaExpand node)
-  Core.betaReduce e'
-
-syntax "eta_reduce" (ppSpace Parser.Tactic.location)? : tactic
-
-elab_rules : tactic
-  | `(tactic| eta_reduce $[$loc?]?) =>
-  withLocation (expandOptLocation (Lean.mkOptionalNode loc?))
-    (atLocal := fun h => liftMetaTactic1 fun mvarId => do
-      let ty ← instantiateMVars (← h.getType)
-      mvarId.changeLocalDecl' h (← transformEtaReduce ty))
-    (atTarget := liftMetaTactic1 fun mvarId => do
-      let ty ← instantiateMVars (← mvarId.getType)
-      mvarId.change (← transformEtaReduce ty))
-    (failed := fun _ => throwError "eta_reduce failed")
-
-syntax "eta_expand" (ppSpace Parser.Tactic.location)? : tactic
-
-elab_rules : tactic
-  | `(tactic| eta_expand $[$loc?]?) =>
-  withLocation (expandOptLocation (Lean.mkOptionalNode loc?))
-    (atLocal := fun h => liftMetaTactic1 fun mvarId => do
-      let ty ← instantiateMVars (← h.getType)
-      mvarId.changeLocalDecl' h (← transformEtaExpand ty))
-    (atTarget := liftMetaTactic1 fun mvarId => do
-      let ty ← instantiateMVars (← mvarId.getType)
-      mvarId.change (← transformEtaExpand ty))
-    (failed := fun _ => throwError "eta_expand failed")
-
-structure Isomorphism where
-  tparams: Sort
-  α: tparams → Type
-  β: tparams → Type
-  coe: ∀ (t:tparams), (α t) → (β t)
-  inv: ∀ (t:tparams), (β t) → (α t)
-  rountrip: ∀ (t:tparams),  (inv t) ∘ (coe t) = id
-
-
 def onlySimp (lemmas: List Name) (e: Expr) : MetaM Simp.Result :=
   simpOnlyNames lemmas e
     (config := { decide := false })
